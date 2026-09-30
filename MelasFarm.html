@@ -228,24 +228,31 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
 /* ── PLOT CONTENT ── */
 .pc{
   position:absolute;bottom:28px;left:0;width:100%;
-  text-align:center;font-size:68px;line-height:1;
+  text-align:center;font-size:54px;line-height:1;
   transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg);
   transform-origin:bottom center;pointer-events:none;z-index:10;
   filter:drop-shadow(0 6px 3px rgba(0,0,0,.44));
 }
-/* Einheitliche Größe für alle Pflanzenstadien — kein Größensprung */
-.pc.large{font-size:84px;bottom:10px;}
-/* Reife Frucht/Gemüse — groß & erkennbar */
-.pc.ripe{font-size:80px;bottom:28px;animation:ripebob 2s infinite ease-in-out;}
+/* Große Deko (Gebäude, Bäume) — etwas größer als Kachel */
+.pc.large{font-size:66px;bottom:28px;}
+/* Reife Frucht/Gemüse — deutlich, aber nicht überragend */
+.pc.ripe{font-size:60px;bottom:28px;animation:ripebob 2s infinite ease-in-out;}
 @keyframes ripebob{
   0%,100%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(0);}
-  50%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(-6px);}
+  50%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(-4px);}
 }
 @keyframes nb{
   0%,100%{transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg) translateY(0);}
-  50%{transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg) translateY(-12px);}
+  50%{transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg) translateY(-10px);}
 }
 .pc.npc{animation:nb 1.8s infinite ease-in-out;}
+/* Bodenschatten unter Objekten — verankert das Emoji visuell auf seinem Feld */
+.plot.has-obj::before{
+  content:'';position:absolute;left:50%;top:50%;
+  width:32px;height:14px;margin-left:-16px;margin-top:-7px;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.45),rgba(0,0,0,.1) 60%,transparent 80%);
+  border-radius:50%;pointer-events:none;z-index:5;
+}
 
 /* ── GROW BAR ── */
 .gb{
@@ -398,14 +405,14 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
   </div>
 </div>
 
-<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.1</div>
+<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.2</div>
 
 <div id="game-wrapper"><div id="game-board"></div></div>
 
 <script>
 // ── VERSION & AUTO-UPDATE ──
 // Diese Zahl bei jedem GitHub-Push erhöhen (z.B. 1.0.1, 1.1.0, 2.0.0)
-const VERSION='1.1.1';
+const VERSION='1.1.2';
 // ↓ Nach dem Fork/Repo-Anlegen HIER den eigenen GitHub-Namen eintragen ↓
 const REPO_OWNER='Innobytix-IT';
 const REPO_NAME='MelasFarm';
@@ -682,10 +689,13 @@ function initBoard(){
       ct.textContent=deco.icon;
       if(deco.type==='large')ct.classList.add('large');
       if(deco.type==='npc')ct.classList.add('npc');
+      if(deco.id!=='zaun')el.classList.add('has-obj');
     }else if(state==='ready'&&crop){
       ct.textContent=CROPS[crop].icon;ct.classList.add('ripe');
+      el.classList.add('has-obj');
     }else if(state==='growing'&&crop){
       ct.textContent=pct<38?'🌱':'🌿';
+      el.classList.add('has-obj');
     }
 
     const gb=document.createElement('div');gb.className='gb';
@@ -823,6 +833,7 @@ function click(idx,ev){
       coins-=activeItem.cost;
       p.state='growing';p.crop=activeItem.id;p.pct=0;p.watered=false;
       ct.textContent='🌱';ct.className='pc';
+      el.classList.add('has-obj');
       gb.style.display='block';gb.querySelector('.gf').style.width='0%';
       gainXP(1);fx(ex,ey,'−'+activeItem.cost+'💰','#fa5');updateHUD();saveGame();
     }else if(p.state==='grass')fx(ex,ey,'Erst pflügen! 🚜','#fff');
@@ -846,6 +857,7 @@ function click(idx,ev){
           ct.textContent=activeItem.icon;ct.className='pc';
           if(activeItem.type==='large')ct.classList.add('large');
           if(activeItem.type==='npc')ct.classList.add('npc');
+          el.classList.add('has-obj');
         }
       }
       gainXP(2);qProgress('build','',1);
@@ -910,6 +922,7 @@ function gameLoop(){
         rpc.textContent=cr.icon;rpc.classList.add('ripe');
         els[i].querySelector('.gb').style.display='none';
         els[i].classList.add('ready-glow');
+        els[i].classList.add('has-obj');
       }else{
         const f=els[i].querySelector('.gf');
         f.style.width=p.pct+'%';f.style.backgroundColor=bCol(p.pct);
