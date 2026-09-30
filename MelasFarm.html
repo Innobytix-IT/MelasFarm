@@ -268,11 +268,15 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
   width:56px;height:56px;font-size:24px;cursor:pointer;
   box-shadow:0 4px 0 #101d5c,0 6px 12px rgba(0,0,0,.45);
   z-index:100;color:#fff;
-  transition:transform .1s,box-shadow .1s;
-  display:flex;align-items:center;justify-content:center;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),opacity .18s;
+  display:none;align-items:center;justify-content:center;
+  opacity:0;transform:translateX(20px) scale(.8);
 }
+#feedback-btn.show{display:flex;opacity:1;transform:translateX(0) scale(1);}
 #feedback-btn:hover{transform:translateY(-1px);}
 #feedback-btn:active{transform:translateY(4px);box-shadow:0 0 0 #101d5c,0 3px 6px rgba(0,0,0,.4);}
+#logo-bar{cursor:pointer;user-select:none;}
+#logo-bar:hover{filter:brightness(1.1);}
 #feedback-modal{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
   z-index:300;justify-content:center;align-items:center;
@@ -326,7 +330,7 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
     💵<span id="h-cash" style="color:#90ee90">30</span>
   </div>
 
-  <div id="logo-bar">
+  <div id="logo-bar" onclick="toggleFeedbackBtn()" title="Klick für Feedback">
     <span class="logo-leaf">🌾</span>
     <span id="logo-text">MelasFarm</span>
     <span class="logo-leaf">🌾</span>
@@ -394,14 +398,14 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
   </div>
 </div>
 
-<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.0</div>
+<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.1</div>
 
 <div id="game-wrapper"><div id="game-board"></div></div>
 
 <script>
 // ── VERSION & AUTO-UPDATE ──
 // Diese Zahl bei jedem GitHub-Push erhöhen (z.B. 1.0.1, 1.1.0, 2.0.0)
-const VERSION='1.1.0';
+const VERSION='1.1.1';
 // ↓ Nach dem Fork/Repo-Anlegen HIER den eigenen GitHub-Namen eintragen ↓
 const REPO_OWNER='Innobytix-IT';
 const REPO_NAME='MelasFarm';
@@ -995,6 +999,9 @@ _wrap.addEventListener('wheel',e=>{
 _wrap.addEventListener('contextmenu',e=>e.preventDefault());
 
 // ── FEEDBACK ──
+function toggleFeedbackBtn(){
+  document.getElementById('feedback-btn').classList.toggle('show');
+}
 function openFeedback(){
   document.getElementById('feedback-modal').classList.add('open');
   document.getElementById('fb-text').focus();
