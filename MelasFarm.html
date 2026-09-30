@@ -260,6 +260,53 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
 /* ── FENCE PIECES (3D in-world) ── */
 .fp{position:absolute;pointer-events:none;z-index:8;}
 
+/* ── FEEDBACK BUTTON & MODAL ── */
+#feedback-btn{
+  position:fixed;top:110px;right:20px;
+  background:linear-gradient(135deg,#6a8dff,#3d5fd8);
+  border:3px solid #1e2f8a;border-radius:14px;
+  width:56px;height:56px;font-size:24px;cursor:pointer;
+  box-shadow:0 4px 0 #101d5c,0 6px 12px rgba(0,0,0,.45);
+  z-index:100;color:#fff;
+  transition:transform .1s,box-shadow .1s;
+  display:flex;align-items:center;justify-content:center;
+}
+#feedback-btn:hover{transform:translateY(-1px);}
+#feedback-btn:active{transform:translateY(4px);box-shadow:0 0 0 #101d5c,0 3px 6px rgba(0,0,0,.4);}
+#feedback-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:300;justify-content:center;align-items:center;
+}
+#feedback-modal.open{display:flex;}
+.fb-card{
+  background:linear-gradient(160deg,#1a0c03,#2e1608);
+  border:3px solid rgba(255,175,45,.5);border-radius:18px;
+  padding:22px 26px;width:min(520px,92vw);color:#fff;
+  box-shadow:0 0 80px rgba(0,0,0,.9);
+}
+.fb-card h3{color:#ffd700;margin:0 0 6px;font-size:22px;}
+.fb-card p{font-size:13px;color:rgba(255,255,255,.7);margin:0 0 14px;line-height:1.5;}
+.fb-card textarea{
+  width:100%;height:130px;resize:vertical;
+  background:rgba(0,0,0,.4);color:#fff;
+  border:2px solid rgba(255,175,45,.35);border-radius:8px;
+  padding:10px 12px;font-family:inherit;font-size:14px;line-height:1.4;
+  outline:none;transition:border-color .15s;
+}
+.fb-card textarea:focus{border-color:rgba(255,215,0,.7);}
+.fb-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;}
+.fb-count{text-align:right;font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;}
+.fb-buttons{display:flex;justify-content:space-between;gap:10px;margin-top:14px;}
+.fb-btn{
+  padding:10px 22px;border-radius:8px;border:none;font-weight:bold;font-size:14px;
+  cursor:pointer;font-family:inherit;
+}
+.fb-btn-send{background:linear-gradient(135deg,#3dd63d,#1c7a1c);color:#fff;border:2px solid #0e4e0e;box-shadow:0 3px 0 #063d06;}
+.fb-btn-cancel{background:linear-gradient(135deg,#666,#444);color:#fff;border:2px solid #333;box-shadow:0 3px 0 #222;}
+.fb-btn:disabled{opacity:.5;cursor:not-allowed;}
+.fb-status{margin-top:10px;font-size:13px;min-height:18px;text-align:center;}
+.fb-hint{margin-top:12px;font-size:11px;color:rgba(255,255,255,.35);text-align:center;line-height:1.5;}
+
 /* ── FLOATING TEXT ── */
 .ft{
   position:fixed;font-weight:bold;font-size:23px;pointer-events:none;
@@ -329,19 +376,38 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
   </div>
 </div>
 
-<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.0.0</div>
+<button id="feedback-btn" onclick="openFeedback()" title="Feedback senden">💬</button>
+
+<div id="feedback-modal" onclick="if(event.target===this)closeFeedback()">
+  <div class="fb-card">
+    <h3>💬 Feedback senden</h3>
+    <p>Was gefällt dir? Was fehlt? Bug gefunden? Schreib es hier — <b>anonym</b> und ohne Anmeldung.</p>
+    <textarea id="fb-text" maxlength="2000" placeholder="Deine Nachricht an Manuel..." oninput="fbCount()"></textarea>
+    <div class="fb-count"><span id="fb-len">0</span> / 2000</div>
+    <input type="text" class="fb-hp" id="fb-hp-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="fb-buttons">
+      <button class="fb-btn fb-btn-cancel" onclick="closeFeedback()">Abbrechen</button>
+      <button class="fb-btn fb-btn-send" id="fb-send" onclick="sendFeedback()">Senden</button>
+    </div>
+    <div class="fb-status" id="fb-status"></div>
+    <div class="fb-hint">Keine Anmeldung, keine E-Mail, keine IP-Speicherung.<br>Nur dein Text + Spielversion + Zeitstempel.</div>
+  </div>
+</div>
+
+<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.0</div>
 
 <div id="game-wrapper"><div id="game-board"></div></div>
 
 <script>
 // ── VERSION & AUTO-UPDATE ──
 // Diese Zahl bei jedem GitHub-Push erhöhen (z.B. 1.0.1, 1.1.0, 2.0.0)
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 // ↓ Nach dem Fork/Repo-Anlegen HIER den eigenen GitHub-Namen eintragen ↓
 const REPO_OWNER='Innobytix-IT';
 const REPO_NAME='MelasFarm';
 const REPO_BRANCH='main';
 const REPO_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/MelasFarm.html`;
+const FEEDBACK_URL='https://innobytix-it.de/MelasFarm/issues/submit.php';
 
 // ── STATE ──
 let coins=1200,cash=30,level=1,xp=0,water=100,day=1,dayCounter=0;
@@ -927,6 +993,57 @@ _wrap.addEventListener('wheel',e=>{
   updateCamera();
 },{passive:false});
 _wrap.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ── FEEDBACK ──
+function openFeedback(){
+  document.getElementById('feedback-modal').classList.add('open');
+  document.getElementById('fb-text').focus();
+}
+function closeFeedback(){
+  document.getElementById('feedback-modal').classList.remove('open');
+  document.getElementById('fb-text').value='';
+  document.getElementById('fb-status').textContent='';
+  document.getElementById('fb-hp-website').value='';
+  fbCount();
+}
+function fbCount(){
+  const t=document.getElementById('fb-text').value;
+  document.getElementById('fb-len').textContent=t.length;
+}
+async function sendFeedback(){
+  const text=document.getElementById('fb-text').value.trim();
+  const hp=document.getElementById('fb-hp-website').value;
+  const status=document.getElementById('fb-status');
+  const btn=document.getElementById('fb-send');
+  if(text.length<3){status.textContent='Bitte mindestens 3 Zeichen.';status.style.color='#f88';return;}
+  if(text.length>2000){status.textContent='Maximal 2000 Zeichen.';status.style.color='#f88';return;}
+  btn.disabled=true;
+  status.textContent='📡 Sende...';status.style.color='rgba(255,255,255,.7)';
+  try{
+    const res=await fetch(FEEDBACK_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({msg:text,v:VERSION,kind:'feedback',website:hp})
+    });
+    if(res.ok){
+      status.textContent='✅ Vielen Dank für dein Feedback!';status.style.color='#4f6';
+      setTimeout(closeFeedback,1800);
+    }else if(res.status===429){
+      const d=await res.json().catch(()=>({wait:60}));
+      status.textContent=`⏱ Bitte warte noch ${d.wait||60} Sekunden.`;status.style.color='#fa5';
+    }else if(res.status===413){
+      status.textContent='Nachricht zu lang.';status.style.color='#f88';
+    }else if(res.status===400){
+      status.textContent='Nachricht ungültig.';status.style.color='#f88';
+    }else{
+      status.textContent='Fehler beim Senden. Später erneut versuchen.';status.style.color='#f88';
+    }
+  }catch(e){
+    status.textContent='🔌 Netzwerkfehler.';status.style.color='#f88';
+  }finally{
+    btn.disabled=false;
+  }
+}
 
 // ── AUTO-UPDATE ──
 function vGT(a,b){

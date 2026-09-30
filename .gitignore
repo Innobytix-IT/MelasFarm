@@ -1,3 +1,6 @@
+# Server-Code (nicht öffentlich, wird per FTP hochgeladen)
+server/
+
 # Backup-Kopien
 *.bak
 *.tmp
