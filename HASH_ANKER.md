@@ -24,14 +24,7 @@ Beim Prüfen einer bestimmten Zeit später:
 
 ## Verlauf
 
-*(noch leer — nach dem ersten Feedback kannst du hier den Anker eintragen)*
+Format: `YYYY-MM-DD HH:MM (Zeitzone) · N Einträge · HASH`
 
-Format:
-```
-YYYY-MM-DD HH:MM UTC · N Einträge · HASH
-```
-
-<!--
-Beispiel:
-2026-10-01 14:32 UTC · 5 Einträge · 3b8a1f2e4c5d6789abcdef0123456789abcdef0123456789abcdef0123456789
--->
+- **2026-09-30 18:07 (CEST) · 1 Eintrag · `e1361c731ea48cb68ff640f3fda9a08b9db12ea3a244b456a13d5373308a7235`**
+  Genesis: erster Testeintrag nach Deployment auf innobytix-it.de.
