@@ -237,6 +237,8 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
 .pc.large{font-size:66px;bottom:28px;}
 /* Reife Frucht/Gemüse — deutlich, aber nicht überragend */
 .pc.ripe{font-size:60px;bottom:28px;animation:ripebob 2s infinite ease-in-out;}
+/* Sehr hohe Emoji-Glyphen (Karotte, Mais, Ananas, Kürbis, Weizen) — auf gleiche Höhe reduziert */
+.pc.ripe.tall{font-size:44px;}
 @keyframes ripebob{
   0%,100%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(0);}
   50%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(-4px);}
@@ -405,14 +407,14 @@ body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
   </div>
 </div>
 
-<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.2</div>
+<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.1.3</div>
 
 <div id="game-wrapper"><div id="game-board"></div></div>
 
 <script>
 // ── VERSION & AUTO-UPDATE ──
 // Diese Zahl bei jedem GitHub-Push erhöhen (z.B. 1.0.1, 1.1.0, 2.0.0)
-const VERSION='1.1.2';
+const VERSION='1.1.3';
 // ↓ Nach dem Fork/Repo-Anlegen HIER den eigenen GitHub-Namen eintragen ↓
 const REPO_OWNER='Innobytix-IT';
 const REPO_NAME='MelasFarm';
@@ -692,6 +694,7 @@ function initBoard(){
       if(deco.id!=='zaun')el.classList.add('has-obj');
     }else if(state==='ready'&&crop){
       ct.textContent=CROPS[crop].icon;ct.classList.add('ripe');
+      if(TALL_CROPS.has(crop))ct.classList.add('tall');
       el.classList.add('has-obj');
     }else if(state==='growing'&&crop){
       ct.textContent=pct<38?'🌱':'🌿';
@@ -906,6 +909,7 @@ function click(idx,ev){
 }
 
 // ── GAME LOOP ──
+const TALL_CROPS=new Set(['karotte','mais','ananas','weizen']);
 function gIcon(p){return p.pct<38?'🌱':'🌿';}
 function bCol(pct){if(pct<40)return'#44cc44';if(pct<75)return'#aacc00';return'#ffcc00';}
 
@@ -920,6 +924,7 @@ function gameLoop(){
         p.pct=100;p.state='ready';
         const rpc=els[i].querySelector('.pc');
         rpc.textContent=cr.icon;rpc.classList.add('ripe');
+        if(TALL_CROPS.has(p.crop))rpc.classList.add('tall');
         els[i].querySelector('.gb').style.display='none';
         els[i].classList.add('ready-glow');
         els[i].classList.add('has-obj');
