@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MelasFarm</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  font-family:'Tahoma','Segoe UI',sans-serif;
+  margin:0;padding:0;overflow:hidden;user-select:none;height:100vh;
+  transition:background 4s ease;
+}
+body.spring{background:linear-gradient(160deg,#2d7a35,#4cae4c 55%,#3a9640);}
+body.summer{background:linear-gradient(160deg,#4a8a20,#8dc840 50%,#5ab030);}
+body.autumn{background:linear-gradient(160deg,#7a3a00,#c46820 45%,#8a4810);}
+body.winter{background:linear-gradient(160deg,#1a2a4c,#3a5080 50%,#2a3a6c);}
+
+/* ── TOP HUD ── */
+#top-hud{
+  position:fixed;top:10px;left:12px;right:12px;
+  display:flex;justify-content:space-between;align-items:center;
+  z-index:100;pointer-events:none;
+}
+
+/* ── LOGO (inline im HUD) ── */
+#logo-bar{
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,rgba(10,5,0,.95),rgba(35,18,4,.90));
+  border:2px solid rgba(255,195,60,.48);
+  border-radius:16px;
+  padding:8px 22px;
+  pointer-events:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.55),0 0 20px rgba(255,170,0,.1);
+}
+.logo-leaf{font-size:20px;}
+#logo-text{
+  font-size:24px;font-weight:900;letter-spacing:2px;
+  font-family:'Georgia',serif;
+  background:linear-gradient(90deg,#ffd700,#ffaa00,#ffd700);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* ── XP-BAR (eigene Zeile, zentriert unter dem HUD) ── */
+.hud-box{
+  background:linear-gradient(135deg,rgba(18,10,2,.93),rgba(45,25,8,.89));
+  border:2px solid rgba(255,195,60,.32);border-radius:16px;color:#fff;
+  padding:8px 18px;font-size:17px;font-weight:bold;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07);
+  pointer-events:auto;
+}
+.sep{width:1px;height:20px;background:rgba(255,195,60,.25);}
+#xp-wrap{
+  position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;pointer-events:auto;z-index:100;
+}
+.lvl-badge{
+  background:linear-gradient(135deg,#ffd700,#e07a00);
+  border:2px solid rgba(255,255,255,.5);border-radius:50%;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:bold;color:#3a1e00;
+  box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 14px rgba(255,175,0,.4);flex-shrink:0;
+}
+#xp-track{
+  background:rgba(0,0,0,.6);border:2px solid rgba(255,195,60,.38);
+  border-radius:10px;width:200px;height:18px;position:relative;overflow:hidden;
+}
+#xp-fill{height:100%;background:linear-gradient(90deg,#ffd700,#ff8c00);border-radius:8px;transition:width .4s;}
+#xp-label{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:bold;color:rgba(255,255,255,.9);text-shadow:0 1px 3px #000;
+}
+
+/* ── TOOLS ── */
+#tools-hud{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:9px;z-index:100;}
+.tool-btn{
+  background:linear-gradient(135deg,#f5f0e8,#d4c5a9);
+  border:3px solid #8b5e2a;border-radius:14px;
+  width:64px;height:64px;font-size:28px;cursor:pointer;
+  box-shadow:0 5px 0 #5c3a15,0 8px 14px rgba(0,0,0,.4);
+  transition:transform .1s,box-shadow .1s;
+  display:flex;justify-content:center;align-items:center;position:relative;
+}
+.tool-btn:active{transform:translateY(5px);box-shadow:0 0 0 #5c3a15,0 3px 6px rgba(0,0,0,.4);}
+.tool-btn.active{
+  background:linear-gradient(135deg,#c4ffbf,#3dd63d);border-color:#1c7a1c;
+  box-shadow:0 5px 0 #0e4e0e,0 8px 14px rgba(0,0,0,.4),0 0 18px rgba(40,200,40,.45);
+}
+.tool-key{position:absolute;top:3px;right:6px;font-size:9px;font-family:monospace;font-weight:bold;color:rgba(0,0,0,.38);}
+.tool-tip{
+  position:absolute;right:74px;
+  background:rgba(8,4,0,.92);color:#fff;
+  padding:7px 13px;border-radius:8px;font-size:13px;
+  white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;
+  font-weight:bold;border:1px solid rgba(255,195,60,.22);
+}
+.tool-btn:hover .tool-tip{opacity:1;}
+
+/* ── QUEST PANEL ── */
+#quest-panel{
+  position:fixed;bottom:20px;left:20px;
+  background:linear-gradient(135deg,rgba(18,10,2,.93),rgba(45,25,8,.89));
+  border:2px solid rgba(255,195,60,.32);border-radius:16px;padding:12px 16px;
+  z-index:100;min-width:240px;
+  box-shadow:0 4px 16px rgba(0,0,0,.55);
+}
+.q-header{color:#ffd700;font-size:14px;font-weight:bold;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;}
+.q-day{color:rgba(255,255,255,.45);font-size:12px;}
+.q-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.q-check{
+  width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,195,60,.45);
+  display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;
+  background:rgba(0,0,0,.3);transition:all .3s;
+}
+.q-check.done{background:#3dd63d;border-color:#1c7a1c;}
+.q-body{flex:1;}
+.q-name{font-size:12px;color:#fff;font-weight:bold;}
+.q-bar{height:4px;background:rgba(255,255,255,.13);border-radius:2px;margin-top:3px;overflow:hidden;}
+.q-fill{height:100%;background:#ffd700;border-radius:2px;transition:width .3s;}
+.q-rew{font-size:11px;color:#ffd700;white-space:nowrap;}
+
+/* ── MARKET ── */
+#market-modal{
+  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,#1a0c03,#2e1608);
+  border:3px solid rgba(255,175,45,.45);border-radius:20px;width:700px;
+  z-index:200;box-shadow:0 0 80px rgba(0,0,0,.9);overflow:hidden;
+}
+.mkt-top{
+  background:rgba(255,175,45,.07);padding:15px 20px 0;
+  border-bottom:2px solid rgba(255,175,45,.22);
+  display:flex;justify-content:space-between;align-items:flex-end;
+}
+.mkt-title{color:#ffd700;font-size:22px;font-weight:bold;}
+.mkt-tabs{display:flex;gap:4px;}
+.tab-btn{
+  background:transparent;border:2px solid rgba(255,175,45,.22);border-bottom:none;
+  padding:8px 18px;font-size:14px;font-weight:bold;cursor:pointer;
+  border-radius:10px 10px 0 0;color:rgba(255,195,70,.5);transition:all .18s;
+}
+.tab-btn.active{background:rgba(255,175,45,.17);color:#ffd700;border-color:rgba(255,175,45,.48);}
+.tab-btn:hover:not(.active){color:rgba(255,195,70,.78);background:rgba(255,175,45,.08);}
+.mkt-body{padding:15px;}
+.mkt-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:9px;
+  max-height:360px;overflow-y:auto;
+}
+.mkt-grid::-webkit-scrollbar{width:6px;}
+.mkt-grid::-webkit-scrollbar-track{background:rgba(0,0,0,.3);border-radius:3px;}
+.mkt-grid::-webkit-scrollbar-thumb{background:rgba(255,175,45,.43);border-radius:3px;}
+.s-card{
+  background:rgba(255,255,255,.06);border:2px solid rgba(255,175,45,.18);
+  border-radius:12px;padding:10px 8px;cursor:pointer;text-align:center;color:#fff;
+  transition:transform .15s,border-color .15s,background .15s;
+}
+.s-card:hover{transform:translateY(-3px);border-color:rgba(255,175,45,.62);background:rgba(255,195,70,.11);}
+.s-card.locked{filter:grayscale(80%);opacity:.44;cursor:not-allowed;}
+.s-card.locked:hover{transform:none;}
+.s-icon{font-size:33px;margin-bottom:4px;}
+.s-name{font-size:13px;font-weight:bold;color:#ffd700;margin-bottom:3px;}
+.s-detail{font-size:10px;color:rgba(255,255,255,.58);line-height:1.65;}
+.s-cost{font-size:14px;font-weight:bold;color:#fff;margin-top:4px;}
+.mkt-foot{
+  padding:11px 16px;border-top:2px solid rgba(255,175,45,.17);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.mkt-hint{font-size:12px;color:rgba(255,255,255,.38);}
+.close-btn{
+  background:linear-gradient(135deg,#b02828,#d83232);color:#fff;
+  border:2px solid #8a1e1e;padding:10px 28px;border-radius:10px;
+  cursor:pointer;font-weight:bold;font-size:16px;
+  box-shadow:0 4px 0 #641414;transition:transform .1s;
+}
+.close-btn:active{transform:translateY(4px);box-shadow:0 0 0 #641414;}
+
+/* ── TOASTS ── */
+#toast-wrap{
+  position:fixed;top:76px;left:50%;transform:translateX(-50%);
+  z-index:500;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.toast{
+  background:linear-gradient(135deg,rgba(12,6,0,.97),rgba(30,15,3,.94));
+  border:2px solid rgba(255,210,0,.52);border-radius:50px;
+  padding:12px 28px;color:#ffd700;font-size:20px;font-weight:bold;
+  box-shadow:0 4px 24px rgba(0,0,0,.7),0 0 22px rgba(255,210,0,.16);
+  animation:tin .35s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.toast.out{animation:tout .35s ease-in forwards;}
+@keyframes tin{from{opacity:0;transform:scale(.5) translateY(-15px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes tout{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8) translateY(-8px)}}
+
+/* ── SNOW ── */
+#snow-wrap{position:fixed;inset:0;pointer-events:none;z-index:90;display:none;}
+.flake{position:absolute;color:#fff;opacity:.75;animation:fall linear infinite;}
+@keyframes fall{from{transform:translateY(-20px) rotate(0)}to{transform:translateY(105vh) rotate(360deg)}}
+
+/* ── 3D GRID ── */
+#game-wrapper{width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;perspective:1600px;overflow:hidden;cursor:grab;}
+#game-wrapper.dragging{cursor:grabbing;}
+#game-board{
+  display:grid;
+  grid-template-columns:repeat(16,56px);
+  grid-template-rows:repeat(16,56px);
+  gap:1px;
+  transform:rotateX(60deg) rotateZ(-45deg);
+  transform-style:preserve-3d;
+  background:rgba(0,0,0,.12);padding:2px;
+}
+.plot{width:56px;height:56px;position:relative;cursor:pointer;box-sizing:border-box;transform-style:preserve-3d;}
+.plot.grass{background:linear-gradient(135deg,#54c459,#3fa042);border:1px solid rgba(0,0,0,.12);}
+.plot.grass:hover{filter:brightness(1.28);}
+.plot.plowed{background:repeating-linear-gradient(45deg,#5c3a21,#5c3a21 4px,#4a2f1a 4px,#4a2f1a 8px);border:1px solid #3a2010;box-shadow:inset 0 0 6px rgba(0,0,0,.4);}
+.plot.plowed:hover{filter:brightness(1.2);}
+.plot.path{background:linear-gradient(135deg,#c8a870,#b09060);border:1px solid #967850;}
+.plot.path:hover{filter:brightness(1.12);}
+.plot.water{background:linear-gradient(135deg,#4a9fe8,#2f78cc 55%,#215fac);border:1px solid #1c4f96;box-shadow:inset 0 0 10px rgba(255,255,255,.3);overflow:hidden;}
+.plot.water::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 250%;animation:wsh 3.5s linear infinite;}
+@keyframes wsh{from{background-position:0% 0%}to{background-position:250% 250%}}
+.plot.water:hover{filter:brightness(1.1);}
+.plot.ready-glow{animation:rp 1.2s infinite alternate;}
+@keyframes rp{
+  from{box-shadow:inset 0 0 6px rgba(255,200,0,.25);}
+  to{box-shadow:inset 0 0 18px rgba(255,224,50,.9),0 0 12px rgba(255,200,0,.55);}
+}
+
+/* ── PLOT CONTENT ── */
+.pc{
+  position:absolute;bottom:28px;left:0;width:100%;
+  text-align:center;font-size:68px;line-height:1;
+  transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg);
+  transform-origin:bottom center;pointer-events:none;z-index:10;
+  filter:drop-shadow(0 6px 3px rgba(0,0,0,.44));
+}
+/* Einheitliche Größe für alle Pflanzenstadien — kein Größensprung */
+.pc.large{font-size:84px;bottom:10px;}
+/* Reife Frucht/Gemüse — groß & erkennbar */
+.pc.ripe{font-size:80px;bottom:28px;animation:ripebob 2s infinite ease-in-out;}
+@keyframes ripebob{
+  0%,100%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(0);}
+  50%{transform:translateZ(6px) rotateZ(45deg) rotateX(-60deg) translateY(-6px);}
+}
+@keyframes nb{
+  0%,100%{transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg) translateY(0);}
+  50%{transform:translateZ(5px) rotateZ(45deg) rotateX(-60deg) translateY(-12px);}
+}
+.pc.npc{animation:nb 1.8s infinite ease-in-out;}
+
+/* ── GROW BAR ── */
+.gb{
+  position:absolute;bottom:24px;left:4px;width:48px;height:7px;
+  background:rgba(0,0,0,.75);border-radius:4px;
+  transform:translateZ(90px) rotateZ(45deg) rotateX(-60deg);
+  pointer-events:none;display:none;
+  border:1px solid rgba(255,255,255,.38);z-index:20;overflow:hidden;
+}
+.gf{height:100%;width:0%;border-radius:3px;transition:width .1s,background-color .5s;}
+
+/* ── FENCE PIECES (3D in-world) ── */
+.fp{position:absolute;pointer-events:none;z-index:8;}
+
+/* ── FLOATING TEXT ── */
+.ft{
+  position:fixed;font-weight:bold;font-size:23px;pointer-events:none;
+  animation:fu 1.1s ease-out forwards;z-index:1000;
+  text-shadow:2px 2px 0 #000,-1px -1px 0 #000;
+}
+@keyframes fu{0%{transform:translateY(0) scale(1);opacity:1}85%{opacity:1}100%{transform:translateY(-68px) scale(1.2);opacity:0}}
+</style>
+</head>
+<body class="spring">
+
+<!-- Zeile 1: Coins | Logo | Water+Day -->
+<div id="top-hud">
+  <div class="hud-box">
+    💰<span id="h-coins" style="color:#ffd700">1200</span>
+    <div class="sep"></div>
+    💵<span id="h-cash" style="color:#90ee90">30</span>
+  </div>
+
+  <div id="logo-bar">
+    <span class="logo-leaf">🌾</span>
+    <span id="logo-text">MelasFarm</span>
+    <span class="logo-leaf">🌾</span>
+  </div>
+
+  <div class="hud-box">
+    💧<span id="h-water" style="color:#5bc8ff">100</span><span style="font-size:12px;color:rgba(255,255,255,.4)">/100</span>
+    <div class="sep"></div>
+    <span id="h-season">🌸</span><span id="h-day" style="color:rgba(255,255,255,.7)">Tag 1</span>
+  </div>
+</div>
+
+<!-- Zeile 2: XP-Bar zentriert darunter -->
+<div id="xp-wrap">
+  <div class="lvl-badge" id="h-level">1</div>
+  <div id="xp-track"><div id="xp-fill"></div><div id="xp-label">0/150 XP</div></div>
+</div>
+
+<div id="toast-wrap"></div>
+<div id="snow-wrap"></div>
+
+<div id="quest-panel">
+  <div class="q-header">📋 Tagesaufgaben<span class="q-day" id="q-day">Tag 1</span></div>
+  <div id="q-list"></div>
+</div>
+
+<div id="tools-hud">
+  <button id="t-cursor" class="tool-btn active" onclick="setTool('cursor')">🖱️<span class="tool-key">ESC</span><span class="tool-tip">Multi-Tool — Ernten / Info</span></button>
+  <button id="t-plow"   class="tool-btn"        onclick="setTool('plow')">🚜<span class="tool-key">P</span><span class="tool-tip">Pflügen (−15💰)</span></button>
+  <button id="t-water"  class="tool-btn"        onclick="setTool('water')">💧<span class="tool-key">W</span><span class="tool-tip">Gießen — +50% Wachstum (−5💧)</span></button>
+  <button id="t-market" class="tool-btn"        onclick="openMarket('seeds')">🏪<span class="tool-key">M</span><span class="tool-tip">Markt öffnen</span></button>
+  <button id="t-sell"   class="tool-btn"        onclick="setTool('sell')">🏷️<span class="tool-key">X</span><span class="tool-tip">Abreißen / Verkaufen (50%)</span></button>
+</div>
+
+<div id="market-modal">
+  <div class="mkt-top">
+    <div class="mkt-title">🏪 Melas Markt</div>
+    <div class="mkt-tabs">
+      <button class="tab-btn active" id="tab-seeds" onclick="openMarket('seeds')">🌱 Samen</button>
+      <button class="tab-btn"        id="tab-deco"  onclick="openMarket('deco')">🏠 Gebäude &amp; Tiere</button>
+    </div>
+  </div>
+  <div class="mkt-body"><div class="mkt-grid" id="mkt-grid"></div></div>
+  <div class="mkt-foot">
+    <span class="mkt-hint">💡 Klicke einen Artikel, dann auf die Farm</span>
+    <button class="close-btn" onclick="closeMarket()">✕ Schließen</button>
+  </div>
+</div>
+
+<div id="ver-tag" style="position:fixed;bottom:4px;right:8px;font-size:10px;color:rgba(255,255,255,.35);z-index:50;pointer-events:none;font-family:monospace;">MelasFarm v1.0.0</div>
+
+<div id="game-wrapper"><div id="game-board"></div></div>
+
+<script>
+// ── VERSION & AUTO-UPDATE ──
+// Diese Zahl bei jedem GitHub-Push erhöhen (z.B. 1.0.1, 1.1.0, 2.0.0)
+const VERSION='1.0.0';
+// ↓ Nach dem Fork/Repo-Anlegen HIER den eigenen GitHub-Namen eintragen ↓
+const REPO_OWNER='Innobytix-IT';
+const REPO_NAME='MelasFarm';
+const REPO_BRANCH='main';
+const REPO_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/MelasFarm.html`;
+
+// ── STATE ──
+let coins=1200,cash=30,level=1,xp=0,water=100,day=1,dayCounter=0;
+let activeTool='cursor',activeItem=null;
+let GRID=16;
+const MAX_GRID=30,PLOW=15,MAX_W=100;
+const plots=[];
+let camX=0,camY=0,camZ=1,isDrag=false,dragDist=0,dragSX,dragSY,dragCX,dragCY;
+function xpNeed(){return level*150;}
+
+// ── SEASONS ──
+const SEASONS=[
+  {name:'Frühling',icon:'🌸',cls:'spring',gMul:1.0,rMul:1.0,nMul:1.0},
+  {name:'Sommer',  icon:'☀️',cls:'summer',gMul:1.25,rMul:1.0,nMul:1.0},
+  {name:'Herbst',  icon:'🍂',cls:'autumn',gMul:0.85,rMul:1.3,nMul:1.1},
+  {name:'Winter',  icon:'❄️',cls:'winter',gMul:0.65,rMul:1.0,nMul:1.6},
+];
+function season(){return SEASONS[Math.floor(((day-1)%12)/3)];}
+let lastSeasIdx=-1;
+
+// ── CROPS ──
+const CROPS={
+  weizen:   {name:'Weizen',   cost:15,  time:10,  rew:50,   xp:5,  lvl:1,icon:'🌾'},
+  karotte:  {name:'Karotte',  cost:25,  time:20,  rew:80,   xp:8,  lvl:1,icon:'🥕'},
+  tomate:   {name:'Tomate',   cost:40,  time:35,  rew:130,  xp:15, lvl:2,icon:'🍅'},
+  mais:     {name:'Mais',     cost:60,  time:50,  rew:190,  xp:22, lvl:2,icon:'🌽'},
+  erdbeere: {name:'Erdbeere', cost:80,  time:70,  rew:270,  xp:35, lvl:3,icon:'🍓'},
+  kurbis:   {name:'Kürbis',   cost:120, time:100, rew:380,  xp:60, lvl:3,icon:'🎃'},
+  blaubeere:{name:'Blaubeere',cost:200, time:180, rew:700,  xp:120,lvl:4,icon:'🫐'},
+  ananas:   {name:'Ananas',   cost:300, time:240, rew:1100, xp:180,lvl:5,icon:'🍍'},
+  melone:   {name:'Melone',   cost:500, time:360, rew:1800, xp:280,lvl:6,icon:'🍉'},
+  weintraube:{name:'Weintraube',cost:750,time:480,rew:2700, xp:420,lvl:7,icon:'🍇'},
+  kirsche:  {name:'Kirsche',  cost:1000,time:600, rew:3800, xp:580,lvl:8,icon:'🍒'},
+};
+
+// ── DECOS ──
+const DECOS={
+  // ── Wege & Wasser ──
+  weg:      {name:'Feldweg',   cost:5,   icon:'',   type:'path', lvl:1},
+  teich:    {name:'Teich',     cost:35,  icon:'💧', type:'water',lvl:1},
+  see:      {name:'See',       cost:60,  icon:'🌊', type:'water',lvl:3},
+  // ── Dekoration ──
+  blume:    {name:'Blume',     cost:18,  icon:'🌸', type:'deco', lvl:1},
+  tulpe:    {name:'Tulpe',     cost:22,  icon:'🌷', type:'deco', lvl:1},
+  pilz:     {name:'Pilz',      cost:25,  icon:'🍄', type:'deco', lvl:1},
+  stein:    {name:'Stein',     cost:10,  icon:'🪨', type:'deco', lvl:1},
+  topf:     {name:'Topfpflanze',cost:20, icon:'🪴', type:'deco', lvl:1},
+  sonnenblume:{name:'Sonnenblume',cost:30,icon:'🌻',type:'deco', lvl:2},
+  zaun:     {name:'Zaun',      cost:20,  icon:'🪵', type:'deco', lvl:1},
+  // ── Bäume ──
+  baum:     {name:'Apfelbaum', cost:50,  icon:'🌳', type:'large',lvl:1},
+  tanne:    {name:'Tanne',     cost:45,  icon:'🌲', type:'large',lvl:1},
+  palme:    {name:'Palme',     cost:120, icon:'🌴', type:'large',lvl:3},
+  kaktus:   {name:'Kaktus',    cost:40,  icon:'🌵', type:'large',lvl:2},
+  // ── Gebäude ──
+  brunnen:  {name:'Brunnen',   cost:250, icon:'⛲', type:'large',lvl:2,wRate:3,wInt:12},
+  windm:    {name:'Windmühle', cost:600, icon:'🏗️',type:'large',lvl:4,wRate:2,wInt:15},
+  haus:     {name:'Bauernhaus',cost:500, icon:'🏠', type:'large',lvl:1},
+  scheune:  {name:'Scheune',   cost:800, icon:'🛖', type:'large',lvl:2},
+  landhaus: {name:'Landhaus',  cost:1200,icon:'🏡', type:'large',lvl:4},
+  schloss:  {name:'Schloss',   cost:5000,icon:'🏰', type:'large',lvl:8},
+  // ── Tiere (passives Einkommen) ──
+  hase:     {name:'Hase',      cost:70,  icon:'🐰', type:'npc',  lvl:1,inc:2, iInt:18},
+  huhn:     {name:'Huhn',      cost:80,  icon:'🐓', type:'npc',  lvl:1,inc:3, iInt:20},
+  ente:     {name:'Ente',      cost:90,  icon:'🦆', type:'npc',  lvl:1,inc:3, iInt:22},
+  bauer:    {name:'Bauer',     cost:100, icon:'👨‍🌾',type:'npc', lvl:1,inc:4, iInt:30},
+  schaf:    {name:'Schaf',     cost:150, icon:'🐑', type:'npc',  lvl:1,inc:6, iInt:45},
+  ziege:    {name:'Ziege',     cost:180, icon:'🐐', type:'npc',  lvl:2,inc:9, iInt:48},
+  biene:    {name:'Bienenstock',cost:200,icon:'🐝', type:'npc',  lvl:3,inc:8, iInt:25},
+  schwein:  {name:'Schwein',   cost:220, icon:'🐷', type:'npc',  lvl:2,inc:11,iInt:50},
+  truthahn: {name:'Truthahn',  cost:260, icon:'🦃', type:'npc',  lvl:3,inc:13,iInt:55},
+  kuh:      {name:'Kuh',       cost:300, icon:'🐄', type:'npc',  lvl:2,inc:14,iInt:60},
+  pferd:    {name:'Pferd',     cost:500, icon:'🐎', type:'npc',  lvl:3,inc:22,iInt:80},
+};
+
+// ── QUESTS ──
+const QPOOL=[
+  {id:'qw', txt:'Ernte 3× Weizen 🌾',  type:'harvest',tgt:'weizen',  need:3,  cr:120,xr:20},
+  {id:'qk', txt:'Ernte 3× Karotten 🥕',type:'harvest',tgt:'karotte', need:3,  cr:160,xr:25},
+  {id:'qt', txt:'Ernte 2× Tomaten 🍅', type:'harvest',tgt:'tomate',  need:2,  cr:220,xr:30},
+  {id:'qm', txt:'Ernte 2× Mais 🌽',    type:'harvest',tgt:'mais',    need:2,  cr:260,xr:38},
+  {id:'qe', txt:'Ernte 1 Erdbeere 🍓', type:'harvest',tgt:'erdbeere',need:1,  cr:300,xr:45},
+  {id:'qp', txt:'Pflüge 5 Felder 🚜',  type:'plow',   tgt:'',        need:5,  cr:90, xr:15},
+  {id:'qn', txt:'Verdiene 500 💰',     type:'earn',   tgt:'',        need:500,cr:100,xr:18},
+  {id:'qb', txt:'Baue 1 Gebäude/Tier', type:'build',  tgt:'',        need:1,  cr:180,xr:28},
+  {id:'qwa',txt:'Gieße 4 Pflanzen 💧', type:'water',  tgt:'',        need:4,  cr:80, xr:14},
+];
+let quests=[];
+let earnedDay=0;
+
+function mkRand(s){return((s*1664525+1013904223)&0x7fffffff);}
+function genQuests(d){
+  const pool=[...QPOOL];const out=[];let s=d*137+42;
+  while(out.length<3&&pool.length){s=mkRand(s);const i=s%pool.length;out.push({...pool[i],prog:0,done:false});pool.splice(i,1);}
+  return out;
+}
+function qProgress(type,tgt,amt){
+  let ch=false;
+  quests.forEach(q=>{
+    if(q.done)return;
+    if(q.type!==type)return;
+    if(type==='harvest'&&q.tgt!==tgt)return;
+    q.prog=Math.min(q.need,q.prog+amt);
+    if(q.prog>=q.need){q.done=true;coins+=q.cr;gainXP(q.xr);showToast(`✅ ${q.txt}  +${q.cr}💰`,2500);}
+    ch=true;
+  });
+  if(ch){renderQuests();saveGame();}
+}
+function renderQuests(){
+  document.getElementById('q-day').textContent='Tag '+day;
+  const l=document.getElementById('q-list');l.innerHTML='';
+  quests.forEach(q=>{
+    const pct=Math.min(100,q.prog/q.need*100);
+    const d=document.createElement('div');d.className='q-row';
+    d.innerHTML=`<div class="q-check${q.done?' done':''}">${q.done?'✓':''}</div>
+    <div class="q-body">
+      <div class="q-name" style="${q.done?'text-decoration:line-through;color:#666':''}">${q.txt}</div>
+      <div class="q-bar"><div class="q-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="q-rew">+${q.cr}💰</div>`;
+    l.appendChild(d);
+  });
+}
+
+// ── SAVE / LOAD ──
+let savedPlots=null;
+function saveGame(){
+  try{
+    localStorage.setItem('mf2',JSON.stringify({
+      coins,cash,level,xp,water,day,dayCounter,gridSize:GRID,
+      plots:plots.map(p=>({s:p.state,c:p.crop,g:Math.round(p.pct),w:p.watered,d:p.deco?p.deco.id||findDecoId(p.deco):null})),
+      quests,earnedDay
+    }));
+  }catch(e){}
+}
+function findDecoId(ref){return Object.keys(DECOS).find(k=>DECOS[k]===ref)||null;}
+function loadGame(){
+  try{
+    const r=localStorage.getItem('mf2');if(!r)return;
+    const d=JSON.parse(r);
+    coins=d.coins;cash=d.cash;level=d.level;xp=d.xp;
+    water=d.water;day=d.day;dayCounter=d.dayCounter||0;
+    GRID=d.gridSize||16;
+    savedPlots=d.plots||null;
+    if(d.quests&&d.quests.length)quests=d.quests;
+    earnedDay=d.earnedDay||0;
+  }catch(e){}
+}
+
+// ── HUD ──
+function updateHUD(){
+  document.getElementById('h-coins').textContent=coins;
+  document.getElementById('h-cash').textContent=cash;
+  document.getElementById('h-water').textContent=water;
+  document.getElementById('h-level').textContent=level;
+  document.getElementById('h-day').textContent='Tag '+day;
+  const s=season();
+  document.getElementById('h-season').textContent=s.icon;
+  const pct=xp/xpNeed()*100;
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-label').textContent=xp+'/'+xpNeed()+' XP';
+  ['cursor','plow','water','sell'].forEach(t=>document.getElementById('t-'+t).classList.remove('active'));
+  document.getElementById('t-market').classList.remove('active');
+  const map={cursor:'t-cursor',plow:'t-plow',water:'t-water',sell:'t-sell',seed:'t-market',build:'t-market'};
+  if(map[activeTool])document.getElementById(map[activeTool]).classList.add('active');
+}
+function setTool(t){activeTool=t;activeItem=null;updateHUD();}
+function gainXP(a){
+  xp+=a;
+  while(xp>=xpNeed()){xp-=xpNeed();level++;cash+=3;showToast('🌟 Level '+level+' erreicht!  +3💵',3000);}
+  updateHUD();
+}
+function showToast(msg,ms=2000){
+  const w=document.getElementById('toast-wrap');
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;w.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),380);},ms);
+}
+function fx(x,y,txt,col){
+  const e=document.createElement('div');e.className='ft';e.textContent=txt;
+  e.style.left=(x-18)+'px';e.style.top=(y-36)+'px';e.style.color=col;
+  document.body.appendChild(e);setTimeout(()=>e.remove(),1100);
+}
+function fmt(s){return s<60?s+'s':Math.floor(s/60)+'m '+(s%60)+'s';}
+
+// ── MARKET ──
+function openMarket(tab){
+  document.getElementById('market-modal').style.display='block';
+  document.getElementById('tab-seeds').className=tab==='seeds'?'tab-btn active':'tab-btn';
+  document.getElementById('tab-deco').className=tab==='deco'?'tab-btn active':'tab-btn';
+  const grid=document.getElementById('mkt-grid');grid.innerHTML='';
+  if(tab==='deco'&&GRID<MAX_GRID){
+    const ec=document.createElement('div');ec.className='s-card';
+    ec.style.borderColor='rgba(100,200,255,.5)';
+    const eCost=getExpandCost();
+    ec.innerHTML=`<div class="s-icon">🗺️</div><div class="s-name">Land kaufen</div><div class="s-detail">${GRID}×${GRID} → ${GRID+2}×${GRID+2}</div><div class="s-cost">${eCost}💰</div>`;
+    ec.onclick=()=>{closeMarket();expandFarm();};
+    grid.appendChild(ec);
+  }
+  const items=tab==='seeds'?CROPS:DECOS;
+  for(const k in items){
+    const it=items[k];const card=document.createElement('div');
+    if(level<it.lvl){
+      card.className='s-card locked';
+      card.innerHTML=`<div class="s-icon">🔒</div><div class="s-name">${it.name}</div><div class="s-detail">Level ${it.lvl}</div>`;
+    }else{
+      card.className='s-card';
+      let det='';
+      if(tab==='seeds')det=`⏱ ${fmt(it.time)}<br>+${it.rew}💰 · +${it.xp}XP`;
+      else if(it.inc)det=`+${it.inc}💰 alle ${it.iInt}s`;
+      else if(it.wRate)det=`+${it.wRate}💧 alle ${it.wInt}s`;
+      card.innerHTML=`<div class="s-icon">${it.icon||'🟫'}</div><div class="s-name">${it.name}</div><div class="s-detail">${det}</div><div class="s-cost">${it.cost}💰</div>`;
+      card.onclick=()=>{activeItem={...it,id:k};activeTool=tab==='seeds'?'seed':'build';closeMarket();updateHUD();};
+    }
+    grid.appendChild(card);
+  }
+}
+function closeMarket(){document.getElementById('market-modal').style.display='none';}
+
+// ── SEASONS VISUAL ──
+function applySeason(s){
+  document.body.className=s.cls;
+  const sw=document.getElementById('snow-wrap');
+  if(s.cls==='winter'){sw.style.display='block';if(!sw.querySelector('.flake'))spawnSnow();}
+  else{sw.style.display='none';sw.innerHTML='';}
+}
+function spawnSnow(){
+  const w=document.getElementById('snow-wrap');
+  for(let i=0;i<22;i++){
+    const f=document.createElement('div');f.className='flake';
+    f.textContent=['❄','✦','*'][i%3];
+    f.style.cssText=`left:${Math.random()*100}%;font-size:${10+Math.random()*14}px;animation-duration:${4+Math.random()*7}s;animation-delay:${-Math.random()*11}s;`;
+    w.appendChild(f);
+  }
+}
+
+// ── INIT BOARD ──
+function initBoard(){
+  const board=document.getElementById('game-board');
+  board.style.gridTemplateColumns=`repeat(${GRID},56px)`;
+  board.style.gridTemplateRows=`repeat(${GRID},56px)`;
+  const PRE=[[2,2,'haus'],[1,1,'baum'],[4,1,'baum'],[1,3,'baum'],[14,2,'baum'],[13,13,'baum'],
+    [4,2,'blume'],[5,2,'blume'],[6,2,'pilz'],[3,5,'bauer'],[11,3,'schaf'],[12,4,'schaf'],[14,8,'kuh'],[9,3,'huhn']];
+  const PATH=new Set();
+  for(let y=3;y<8;y++)PATH.add(`2,${y}`);
+  for(let x=2;x<8;x++)PATH.add(`${x},7`);
+
+  for(let i=0;i<GRID*GRID;i++){
+    const x=i%GRID,y=Math.floor(i/GRID);
+    let state='grass',deco=null,crop=null,pct=0,watered=false;
+
+    if(PATH.has(`${x},${y}`))state='path';
+    else{const pb=PRE.find(([px,py])=>px===x&&py===y);if(pb){state='deco';deco={...DECOS[pb[2]],id:pb[2]};}}
+    if(x>=6&&x<=9&&y>=8&&y<=11&&state==='grass')state='plowed';
+
+    if(savedPlots&&savedPlots[i]){
+      const sp=savedPlots[i];
+      state=sp.s;crop=sp.c||null;pct=sp.g||0;watered=sp.w||false;
+      deco=sp.d?{...DECOS[sp.d],id:sp.d}:null;
+    }
+
+    const el=document.createElement('div');
+    el.className=(state==='path')?'plot path':(state==='water')?'plot water':(state==='plowed'||state==='growing'||state==='ready')?'plot plowed':'plot grass';
+    if(state==='ready')el.classList.add('ready-glow');
+    el.onclick=e=>click(i,e);
+
+    const ct=document.createElement('div');ct.className='pc';
+    if(state==='deco'&&deco){
+      ct.textContent=deco.icon;
+      if(deco.type==='large')ct.classList.add('large');
+      if(deco.type==='npc')ct.classList.add('npc');
+    }else if(state==='ready'&&crop){
+      ct.textContent=CROPS[crop].icon;ct.classList.add('ripe');
+    }else if(state==='growing'&&crop){
+      ct.textContent=pct<38?'🌱':'🌿';
+    }
+
+    const gb=document.createElement('div');gb.className='gb';
+    gb.innerHTML='<div class="gf"></div>';
+    if(state==='growing'){gb.style.display='block';gb.querySelector('.gf').style.width=pct+'%';}
+
+    el.appendChild(ct);el.appendChild(gb);board.appendChild(el);
+    plots.push({state,crop,deco,pct,watered,
+      nT:(deco&&deco.inc)?0:null,
+      wT:(deco&&deco.wRate)?0:null});
+  }
+  // Build fence visuals after all plots exist
+  for(let i=0;i<GRID*GRID;i++){if(isFence(i))buildFenceEl(i);}
+}
+
+// ── SMART FENCE ──
+function isFence(i){
+  if(i<0||i>=GRID*GRID)return false;
+  const p=plots[i];return p&&p.state==='deco'&&p.deco&&p.deco.id==='zaun';
+}
+
+// Baut einen echten 3D-Quader in eine Kachel (preserve-3d).
+// L,T = Grundfläche oben-links; W,D = Grundfläche; H = Höhe; z0 = Basishöhe.
+// cTop = Deckfläche, cX = Ost/West-Wände, cY = Nord/Süd-Wände.
+function fBox(el,L,T,W,D,H,z0,cTop,cX,cY){
+  const add=(w,h,tf,bg)=>{
+    const d=document.createElement('div');d.className='fp';
+    d.style.cssText=`left:0;top:0;width:${w}px;height:${h}px;background:${bg};transform:${tf};transform-origin:0 0;`;
+    el.appendChild(d);
+  };
+  add(W,D,`translate3d(${L}px,${T}px,${z0+H}px)`,cTop);                 // Deckel
+  add(W,H,`translate3d(${L}px,${T+D}px,${z0}px) rotateX(90deg)`,cY);    // Süd-Wand
+  add(W,H,`translate3d(${L}px,${T}px,${z0}px) rotateX(90deg)`,cY);      // Nord-Wand
+  add(H,D,`translate3d(${L+W}px,${T}px,${z0}px) rotateY(-90deg)`,cX);   // Ost-Wand
+  add(H,D,`translate3d(${L}px,${T}px,${z0}px) rotateY(-90deg)`,cX);     // West-Wand
+}
+
+function buildFenceEl(idx){
+  const els=document.querySelectorAll('.plot');
+  const el=els[idx];if(!el)return;
+  el.querySelectorAll('.fp').forEach(f=>f.remove());
+  if(!isFence(idx))return;
+
+  const x=idx%GRID,y=Math.floor(idx/GRID);
+  const N=y>0&&isFence(idx-GRID);
+  const S=y<GRID-1&&isFence(idx+GRID);
+  const W=x>0&&isFence(idx-1);
+  const E=x<GRID-1&&isFence(idx+1);
+
+  // Holzfarben
+  const rTop='#9c6b3a',rX='#6e4823',rY='#5a3a1c';        // Querbalken
+  const railT=25,railW=6,railH=6,zLo=9,zHi=22;
+  // Querbalken (zwei Höhen) zu jedem verbundenen Nachbarn — von Kachelmitte bis Rand
+  if(E){[zLo,zHi].forEach(z=>fBox(el,28,railT,28,railW,railH,z,rTop,rX,rY));}
+  if(W){[zLo,zHi].forEach(z=>fBox(el,0, railT,28,railW,railH,z,rTop,rX,rY));}
+  if(S){[zLo,zHi].forEach(z=>fBox(el,railT,28,railW,28,railH,z,rTop,rX,rY));}
+  if(N){[zLo,zHi].forEach(z=>fBox(el,railT,0, railW,28,railH,z,rTop,rX,rY));}
+
+  // Pfosten (Mitte), hoch — mit hellerer Kappe oben
+  fBox(el,21,21,14,14,40,0,'#dca85f','#a9793c','#8c6230');
+  fBox(el,19,19,18,18,5,40,'#eec079','#c79a55','#b0863f');
+
+  // Emoji der Kachel ausblenden
+  const ct=el.querySelector('.pc');if(ct)ct.textContent='';
+}
+
+function updateFenceNeighbors(idx){
+  const x=idx%GRID,y=Math.floor(idx/GRID);
+  buildFenceEl(idx);
+  if(y>0)     buildFenceEl(idx-GRID);
+  if(y<GRID-1)buildFenceEl(idx+GRID);
+  if(x>0)     buildFenceEl(idx-1);
+  if(x<GRID-1)buildFenceEl(idx+1);
+}
+
+// ── FARM EXPAND ──
+function getExpandCost(){return 400+(GRID-16)*200;}
+function expandFarm(){
+  const cost=getExpandCost();
+  if(coins<cost){showToast('Zu wenig 💰! Brauchst '+cost+'💰',2000);return;}
+  if(GRID>=MAX_GRID){showToast('Maximale Größe erreicht! ('+MAX_GRID+'×'+MAX_GRID+')',2000);return;}
+  coins-=cost;
+  const stateMap={};
+  for(let i=0;i<plots.length;i++){
+    const x=i%GRID,y=Math.floor(i/GRID);
+    const p=plots[i];
+    stateMap[`${x},${y}`]={s:p.state,c:p.crop,g:Math.round(p.pct),w:p.watered,d:p.deco?(p.deco.id||findDecoId(p.deco)):null};
+  }
+  GRID+=2;
+  savedPlots=[];
+  for(let i=0;i<GRID*GRID;i++){
+    const x=i%GRID,y=Math.floor(i/GRID);
+    savedPlots[i]=stateMap[`${x},${y}`]||{s:'grass',c:null,g:0,w:false,d:null};
+  }
+  plots.length=0;
+  const board=document.getElementById('game-board');
+  board.innerHTML='';
+  initBoard();
+  savedPlots=null;
+  gainXP(10);
+  showToast(`🗺️ Farm erweitert auf ${GRID}×${GRID}!`,3000);
+  updateHUD();saveGame();
+}
+
+// ── CLICK ──
+function click(idx,ev){
+  if(dragDist>4){dragDist=0;return;}
+  const p=plots[idx];
+  const el=document.querySelectorAll('.plot')[idx];
+  const ct=el.querySelector('.pc');
+  const gb=el.querySelector('.gb');
+  const ex=ev.clientX,ey=ev.clientY;
+
+  if(activeTool==='plow'){
+    if(p.state==='grass'){
+      if(coins<PLOW){fx(ex,ey,'Zu wenig 💰!','#f55');return;}
+      coins-=PLOW;p.state='plowed';el.className='plot plowed';
+      gainXP(1);qProgress('plow','',1);
+      fx(ex,ey,'−'+PLOW+'💰','#fa5');updateHUD();saveGame();
+    }else if(p.state==='plowed')fx(ex,ey,'Schon gepflügt!','#ddd');
+
+  }else if(activeTool==='water'){
+    if(p.state==='growing'){
+      if(water<5){fx(ex,ey,'Kein Wasser!','#5cf');return;}
+      if(p.watered){fx(ex,ey,'Schon gegossen!','#aaa');return;}
+      water-=5;p.watered=true;
+      gb.querySelector('.gf').style.boxShadow='0 0 5px #5bc8ff';
+      qProgress('water','',1);
+      fx(ex,ey,'💧 Gegossen!','#5cf');updateHUD();saveGame();
+    }else fx(ex,ey,'Nichts zu gießen','#888');
+
+  }else if(activeTool==='seed'&&activeItem){
+    if(p.state==='plowed'){
+      if(coins<activeItem.cost){fx(ex,ey,'Zu wenig 💰!','#f55');return;}
+      coins-=activeItem.cost;
+      p.state='growing';p.crop=activeItem.id;p.pct=0;p.watered=false;
+      ct.textContent='🌱';ct.className='pc';
+      gb.style.display='block';gb.querySelector('.gf').style.width='0%';
+      gainXP(1);fx(ex,ey,'−'+activeItem.cost+'💰','#fa5');updateHUD();saveGame();
+    }else if(p.state==='grass')fx(ex,ey,'Erst pflügen! 🚜','#fff');
+    else fx(ex,ey,'Feld belegt!','#ddd');
+
+  }else if(activeTool==='build'&&activeItem){
+    if(p.state==='grass'){
+      if(coins<activeItem.cost){fx(ex,ey,'Zu wenig 💰!','#f55');return;}
+      coins-=activeItem.cost;
+      if(activeItem.type==='path'){
+        p.state='path';el.className='plot path';ct.textContent='';ct.className='pc';
+      }else if(activeItem.type==='water'){
+        p.state='water';p.deco=activeItem;el.className='plot water';ct.textContent='';ct.className='pc';
+      }else{
+        p.state='deco';p.deco=activeItem;
+        p.nT=activeItem.inc?0:null;p.wT=activeItem.wRate?0:null;
+        if(activeItem.id==='zaun'){
+          ct.textContent='';ct.className='pc';
+          updateFenceNeighbors(idx);
+        }else{
+          ct.textContent=activeItem.icon;ct.className='pc';
+          if(activeItem.type==='large')ct.classList.add('large');
+          if(activeItem.type==='npc')ct.classList.add('npc');
+        }
+      }
+      gainXP(2);qProgress('build','',1);
+      fx(ex,ey,'✅ Gebaut!','#4f6');updateHUD();saveGame();
+    }else fx(ex,ey,'Braucht freie Wiese!','#ddd');
+
+  }else if(activeTool==='sell'){
+    if(p.state==='deco'||p.state==='path'||p.state==='water'){
+      const ref=p.state==='path'?2:(p.deco?Math.floor(p.deco.cost/2):2);
+      const wasZaun=p.state==='deco'&&p.deco&&p.deco.id==='zaun';
+      coins+=ref;p.state='grass';p.deco=null;p.nT=null;p.wT=null;
+      el.className='plot grass';ct.textContent='';ct.className='pc';
+      el.querySelectorAll('.fp').forEach(f=>f.remove());
+      if(wasZaun)updateFenceNeighbors(idx);
+      fx(ex,ey,'+'+ref+'💰','#ffd700');updateHUD();saveGame();
+    }else if(p.state==='plowed'){
+      p.state='grass';el.className='plot grass';fx(ex,ey,'Umgegraben','#ccc');saveGame();
+    }else if(p.state==='growing'||p.state==='ready'){
+      p.state='plowed';p.crop=null;p.pct=0;p.watered=false;
+      el.className='plot plowed';el.classList.remove('ready-glow');
+      ct.textContent='';ct.className='pc';gb.style.display='none';
+      fx(ex,ey,'Entfernt','#bbb');saveGame();
+    }
+
+  }else if(activeTool==='cursor'){
+    if(p.state==='ready'){
+      const cr=CROPS[p.crop];const s=season();
+      const rew=Math.round(cr.rew*s.rMul);
+      coins+=rew;earnedDay+=rew;gainXP(cr.xp);
+      qProgress('harvest',p.crop,1);qProgress('earn','',rew);
+      fx(ex,ey,'+'+rew+'💰','#ffd700');
+      // NACH DER ERNTE → bleibt gepflügt
+      p.state='plowed';p.crop=null;p.pct=0;p.watered=false;
+      el.className='plot plowed';el.classList.remove('ready-glow');
+      ct.textContent='';ct.className='pc';gb.style.display='none';
+      updateHUD();saveGame();
+    }else if(p.state==='growing'){
+      const cr=CROPS[p.crop];
+      const rem=Math.ceil((100-p.pct)/100*cr.time);
+      fx(ex,ey,'⏱ ~'+fmt(rem)+(p.watered?' 💧':''),'#adf');
+    }else if(p.state==='deco'&&p.deco&&p.deco.type==='npc'){
+      const SND={schaf:'🐑 Mäh!',kuh:'🐄 Muh!',bauer:'👨‍🌾 Hallo!',huhn:'🐓 Gackern!',pferd:'🐎 Wiehern!',biene:'🐝 Summ!'};
+      fx(ex,ey,SND[p.deco.id]||'👋','#fff');
+    }
+  }
+}
+
+// ── GAME LOOP ──
+function gIcon(p){return p.pct<38?'🌱':'🌿';}
+function bCol(pct){if(pct<40)return'#44cc44';if(pct<75)return'#aacc00';return'#ffcc00';}
+
+function gameLoop(){
+  const els=document.querySelectorAll('.plot');
+  const s=season();let hud=false;
+  plots.forEach((p,i)=>{
+    if(p.state==='growing'){
+      const cr=CROPS[p.crop];
+      p.pct+=(33/(cr.time*1000))*100*(p.watered?1.5:1)*s.gMul;
+      if(p.pct>=100){
+        p.pct=100;p.state='ready';
+        const rpc=els[i].querySelector('.pc');
+        rpc.textContent=cr.icon;rpc.classList.add('ripe');
+        els[i].querySelector('.gb').style.display='none';
+        els[i].classList.add('ready-glow');
+      }else{
+        const f=els[i].querySelector('.gf');
+        f.style.width=p.pct+'%';f.style.backgroundColor=bCol(p.pct);
+        const ct=els[i].querySelector('.pc');
+        const ic=gIcon(p);
+        if(ct.textContent!==ic){
+          ct.textContent=ic;
+        }
+      }
+    }
+    if(p.state==='deco'&&p.deco){
+      if(p.deco.inc&&p.nT!==null){
+        p.nT+=33;
+        const iv=p.deco.iInt*1000/s.nMul;
+        if(p.nT>=iv){p.nT=0;coins+=p.deco.inc;hud=true;
+          qProgress('earn','',p.deco.inc);
+          const r=els[i].getBoundingClientRect();
+          fx(r.left+20,r.top+10,'+'+p.deco.inc+'💰','#ffd700');}
+      }
+      if(p.deco.wRate&&p.wT!==null){
+        p.wT+=33;
+        if(p.wT>=p.deco.wInt*1000){p.wT=0;if(water<MAX_W){water=Math.min(MAX_W,water+p.deco.wRate);hud=true;}}
+      }
+    }
+  });
+  if(hud)updateHUD();
+}
+
+// ── DAY / SEASON TICK ──
+function tickDay(){
+  dayCounter++;
+  if(dayCounter>=120){
+    dayCounter=0;day++;
+    const s=season();const si=SEASONS.indexOf(s);
+    if(si!==lastSeasIdx){lastSeasIdx=si;applySeason(s);showToast(s.icon+' '+s.name+' beginnt!',3000);}
+    quests=genQuests(day);earnedDay=0;
+    renderQuests();showToast('🌅 Tag '+day+' beginnt!');
+    updateHUD();saveGame();
+  }
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('market-modal').style.display==='block'){if(e.key==='Escape')closeMarket();return;}
+  const k=e.key.toLowerCase();
+  if(k==='escape')setTool('cursor');
+  else if(k==='p')setTool('plow');
+  else if(k==='w')setTool('water');
+  else if(k==='x')setTool('sell');
+  else if(k==='m')openMarket('seeds');
+  else if(k==='h'){camX=0;camY=0;camZ=1;updateCamera();}
+  else if(k==='arrowleft'){camX+=60;updateCamera();e.preventDefault();}
+  else if(k==='arrowright'){camX-=60;updateCamera();e.preventDefault();}
+  else if(k==='arrowup'){camY+=60;updateCamera();e.preventDefault();}
+  else if(k==='arrowdown'){camY-=60;updateCamera();e.preventDefault();}
+});
+
+// ── CAMERA (Pan & Zoom) ──
+function updateCamera(){
+  document.getElementById('game-board').style.transform=
+    `translate(${camX}px,${camY}px) scale(${camZ}) rotateX(60deg) rotateZ(-45deg)`;
+}
+const _wrap=document.getElementById('game-wrapper');
+_wrap.addEventListener('mousedown',e=>{
+  isDrag=true;dragDist=0;
+  dragSX=e.clientX;dragSY=e.clientY;
+  dragCX=camX;dragCY=camY;
+});
+window.addEventListener('mousemove',e=>{
+  if(!isDrag)return;
+  const dx=e.clientX-dragSX,dy=e.clientY-dragSY;
+  dragDist=Math.abs(dx)+Math.abs(dy);
+  if(dragDist>4){camX=dragCX+dx;camY=dragCY+dy;_wrap.classList.add('dragging');updateCamera();}
+});
+window.addEventListener('mouseup',()=>{isDrag=false;_wrap.classList.remove('dragging');setTimeout(()=>{dragDist=0;},0);});
+_wrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=_wrap.getBoundingClientRect();
+  const mx=e.clientX-rect.left-rect.width/2;
+  const my=e.clientY-rect.top-rect.height/2;
+  const oldZ=camZ;
+  camZ=Math.max(0.3,Math.min(2.5,camZ+(e.deltaY>0?-0.08:0.08)));
+  const r=camZ/oldZ;
+  camX=mx-(mx-camX)*r;camY=my-(my-camY)*r;
+  updateCamera();
+},{passive:false});
+_wrap.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ── AUTO-UPDATE ──
+function vGT(a,b){
+  const pa=String(a).split('.').map(Number),pb=String(b).split('.').map(Number);
+  for(let i=0;i<3;i++){if((pa[i]||0)>(pb[i]||0))return true;if((pa[i]||0)<(pb[i]||0))return false;}
+  return false;
+}
+async function checkForUpdate(force){
+  if(REPO_OWNER==='DEIN_GITHUB_NAME')return;
+  const last=parseInt(localStorage.getItem('mf_lastCheck')||'0');
+  if(!force&&Date.now()-last<24*60*60*1000)return;
+  localStorage.setItem('mf_lastCheck',Date.now().toString());
+  try{
+    const res=await fetch(REPO_URL+'?t='+Date.now(),{cache:'no-cache'});
+    if(!res.ok)return;
+    const text=await res.text();
+    const m=text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+    if(!m||!vGT(m[1],VERSION))return;
+    showUpdateModal(m[1],text);
+  }catch(e){/* offline oder CORS – still sein */}
+}
+function showUpdateModal(newVer,html){
+  if(document.getElementById('mf-upd'))return;
+  const m=document.createElement('div');m.id='mf-upd';
+  m.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(160deg,#1a0c03,#2e1608);border:3px solid rgba(255,175,45,.55);border-radius:20px;padding:26px 34px;z-index:1000;color:#fff;text-align:center;box-shadow:0 0 80px rgba(0,0,0,.9);max-width:460px;font-family:Tahoma,sans-serif;';
+  m.innerHTML=`
+    <div style="font-size:26px;color:#ffd700;font-weight:bold;margin-bottom:10px;">🎉 Update verfügbar!</div>
+    <div style="margin:12px 0 18px;font-size:18px;">Version <span style="opacity:.6">${VERSION}</span> → <b style="color:#4f6">${newVer}</b></div>
+    <div style="margin-bottom:22px;font-size:13px;color:rgba(255,255,255,.75);line-height:1.55;">
+      Klicke unten, um die neue Version herunterzuladen.<br>
+      <b>Speichere die Datei am selben Ort</b> wie die alte —
+      dann bleiben alle Spielstände erhalten.
+    </div>
+    <button id="mfu-yes" style="background:linear-gradient(135deg,#3dd63d,#1c7a1c);color:#fff;border:2px solid #0e4e0e;padding:12px 26px;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;box-shadow:0 4px 0 #063d06;margin-right:8px;">⬇ Jetzt aktualisieren</button>
+    <button id="mfu-no" style="background:linear-gradient(135deg,#666,#444);color:#fff;border:2px solid #333;padding:12px 22px;border-radius:10px;font-weight:bold;font-size:14px;cursor:pointer;">Später</button>
+  `;
+  document.body.appendChild(m);
+  document.getElementById('mfu-yes').onclick=()=>{
+    const blob=new Blob([html],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='MelasFarm.html';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    m.remove();
+    showToast('✅ Bitte alte Datei ersetzen',3500);
+  };
+  document.getElementById('mfu-no').onclick=()=>m.remove();
+}
+
+// ── START ──
+loadGame();
+if(!quests.length)quests=genQuests(day);
+initBoard();
+updateCamera();
+updateHUD();renderQuests();
+const s0=season();lastSeasIdx=SEASONS.indexOf(s0);applySeason(s0);
+setInterval(gameLoop,33);
+setInterval(()=>{if(water<MAX_W){water++;updateHUD();}},3000);
+setInterval(tickDay,1000);
+setInterval(saveGame,5000);
+window.addEventListener('beforeunload',saveGame);
+document.getElementById('ver-tag').textContent='MelasFarm v'+VERSION;
+setTimeout(checkForUpdate,3000);
+setInterval(checkForUpdate,60*60*1000); // Jede Stunde prüfen (wirkt aber nur 1× pro Tag)
+</script>
+</body>
+</html>
